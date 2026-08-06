@@ -16,7 +16,7 @@
 - 🎤 **Live Karaoke Lyrics**: Synced real-time scrolling lyrics with word-by-word karaoke highlighting.
 - 📱 **Mobile PWA Ready**: Installable on Android & iOS devices with native bottom navigation and media notification controls.
 - ☁️ **Supabase Cloud Sync**: Instant synchronization of user authentication, liked tracks, playlists, and listening history across all devices.
-- 📻 **Podcast Streaming Engine**: Built-in podcast search and playback support.
+- 📻 **Podcast Streaming Engine**: Built-in podcast search and buffer-free playback support.
 - 🎨 **Glassmorphism Dark Theme**: Modern dark aesthetic with smooth ambient color glows and micro-animations.
 - 🔐 **Profile & Password Management**: Self-serve nickname updates, email management, and secure password updates.
 
@@ -27,8 +27,16 @@
 - **Frontend**: React 18, Vite
 - **Styling**: Modern Vanilla CSS Design System, Glassmorphism
 - **Backend & Database**: Supabase (Auth, PostgreSQL, Row Level Security)
-- **Audio & Lyrics**: YouTube Player API, LrcLib API
+- **Audio & Lyrics**: YouTube IFrame Player API, LrcLib API
 - **Deployment**: Vercel & PWA Manifest
+
+---
+
+## ⚖️ Disclaimer & Content Attribution
+
+- **Content Ownership**: All music, audio streams, song titles, artist names, album artwork, and lyrics belong exclusively to their respective original copyright holders, artists, and record labels.
+- **YouTube Platform Integration**: All audio streaming is powered via official YouTube APIs. All play counts, views, and engagement accrue directly to the original content creators on YouTube.
+- **Non-Commercial & Educational**: This project is built solely for educational, personal, and non-commercial portfolio purposes. The application does not host, store, download, or sell any copyright-protected audio files.
 
 ---
 
