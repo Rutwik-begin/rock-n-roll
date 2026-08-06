@@ -75,28 +75,17 @@ export default function ProfileView({ user, setUser, onSignOut, likedTracks = []
       color: '#fff'
     }}>
       {/* Header Banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, rgba(29, 185, 84, 0.15), rgba(18, 18, 18, 0.6))',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: 24,
-        padding: '36px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 28,
-        backdropFilter: 'blur(20px)',
-        marginBottom: 32,
-        boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
-      }}>
+      <div className="profile-header-card">
         <div style={{
-          width: 88,
-          height: 88,
+          width: 80,
+          height: 80,
           borderRadius: '50%',
           background: 'linear-gradient(135deg, var(--accent, #1db954), #10b981)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           color: '#000',
-          fontSize: 38,
+          fontSize: 34,
           fontWeight: 900,
           boxShadow: '0 0 30px rgba(29, 185, 84, 0.4)',
           flexShrink: 0
@@ -104,9 +93,9 @@ export default function ProfileView({ user, setUser, onSignOut, likedTracks = []
           {avatarInitial}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <h1 style={{ fontSize: 30, fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>
+        <div className="profile-header-info" style={{ flex: 1, minWidth: 0 }}>
+          <div className="profile-name-row" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0, letterSpacing: '-0.5px', wordBreak: 'break-word' }}>
               {displayName}
             </h1>
             <span style={{
@@ -117,20 +106,21 @@ export default function ProfileView({ user, setUser, onSignOut, likedTracks = []
               fontWeight: 700,
               padding: '4px 12px',
               borderRadius: 20,
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: 4
             }}>
               <ShieldCheck size={14} /> Cloud Active
             </span>
           </div>
-          <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginTop: 6, margin: '6px 0 0' }}>
+          <p className="profile-user-email" style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 6, wordBreak: 'break-all' }}>
             {user?.email || 'Logged in user'}
           </p>
         </div>
 
         <button
           onClick={onSignOut}
+          className="profile-signout-btn"
           style={{
             background: 'rgba(239, 68, 68, 0.15)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
@@ -143,7 +133,8 @@ export default function ProfileView({ user, setUser, onSignOut, likedTracks = []
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            flexShrink: 0
           }}
           onMouseEnter={e => {
             e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)';

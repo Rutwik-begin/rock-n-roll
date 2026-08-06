@@ -246,7 +246,7 @@ export default function HomeView({
 
       {/* ═══════ SECTION 1: TOP TRENDING SONGS ═══════ */}
       <div style={{ marginBottom: 48 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
           <h2 className="section-title" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
             <Flame size={24} color="var(--accent)" /> Top Trending Songs
           </h2>
@@ -264,7 +264,7 @@ export default function HomeView({
         </div>
 
         {/* ── Category Selector Boxes ── */}
-        <div className="category-boxes" style={{ gridTemplateColumns: `repeat(${CATEGORIES.length}, 1fr)` }}>
+        <div className="category-boxes">
           {CATEGORIES.map(cat => (
             <div
               key={cat.id}
