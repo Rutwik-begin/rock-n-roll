@@ -60,7 +60,7 @@ export default function Sidebar({ activeView, setActiveView, playlists, onCreate
         <Plus size={16} /> Create Playlist
       </button>
 
-      {playlists.map(pl => (
+      {(playlists || []).filter(pl => pl && pl.id && pl.name && !['My Hi-Fi Favorites', 'Late Night Chill & Focus'].includes(pl.name)).map(pl => (
         <button
           key={pl.id}
           className="playlist-item"

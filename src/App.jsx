@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react';
-import { Music } from 'lucide-react';
+import { Music, Home, Search, Headphones, Library, User } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Player from './components/Player';
 
@@ -407,6 +407,34 @@ export default function App() {
       />
 
       <main className="main-content" style={{ position: 'relative' }}>
+        {/* Mobile Top Header */}
+        <div className="mobile-header">
+          <div className="sidebar-brand" style={{ padding: 0, fontSize: 18 }}>Rock 'N Roll</div>
+          {user ? (
+            <button
+              onClick={() => setActiveView('profile')}
+              style={{
+                width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)',
+                border: 'none', color: '#000', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+              title="View Profile"
+            >
+              {(user.user_metadata?.display_name || user.email || 'U')[0].toUpperCase()}
+            </button>
+          ) : (
+            <button
+              onClick={() => setActiveView('login')}
+              style={{
+                padding: '6px 12px', borderRadius: 20, background: 'var(--accent)',
+                border: 'none', color: '#000', fontWeight: 700, fontSize: 12, cursor: 'pointer'
+              }}
+            >
+              Sign In
+            </button>
+          )}
+        </div>
+
         {/* Top Gradient */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, height: 300,
@@ -544,6 +572,45 @@ export default function App() {
         onToggleLyrics={() => setShowLyrics(prev => !prev)}
         showLyrics={showLyrics}
       />
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="mobile-bottom-nav">
+        <button
+          className={`mobile-nav-item ${activeView === 'home' ? 'active' : ''}`}
+          onClick={() => setActiveView('home')}
+        >
+          <Home size={20} />
+          <span>Home</span>
+        </button>
+        <button
+          className={`mobile-nav-item ${activeView === 'search' ? 'active' : ''}`}
+          onClick={() => { setSearchQuery(''); setActiveView('search'); }}
+        >
+          <Search size={20} />
+          <span>Search</span>
+        </button>
+        <button
+          className={`mobile-nav-item ${activeView === 'podcasts' ? 'active' : ''}`}
+          onClick={() => setActiveView('podcasts')}
+        >
+          <Headphones size={20} />
+          <span>Podcasts</span>
+        </button>
+        <button
+          className={`mobile-nav-item ${(activeView === 'library' || activeView === 'liked' || activeView.startsWith('playlist-')) ? 'active' : ''}`}
+          onClick={() => setActiveView('library')}
+        >
+          <Library size={20} />
+          <span>Library</span>
+        </button>
+        <button
+          className={`mobile-nav-item ${activeView === 'profile' ? 'active' : ''}`}
+          onClick={() => setActiveView(user ? 'profile' : 'login')}
+        >
+          <User size={20} />
+          <span>{user ? 'Profile' : 'Account'}</span>
+        </button>
+      </nav>
     </div>
   );
 }

@@ -1034,3 +1034,132 @@ input[type="range"]:hover::-webkit-slider-thumb {
   40% { opacity: 1; transform: scale(1); }
 }
 
+/* ═══════ MOBILE & DESKTOP RESPONSIVE LAYOUT ═══════ */
+.mobile-header {
+  display: none;
+}
+
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    width: 100vw;
+    overflow: hidden;
+    grid-template-columns: 1fr;
+  }
+
+  /* Hide desktop sidebar on mobile */
+  .sidebar {
+    display: none !important;
+  }
+
+  /* Mobile Top Header */
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--glass-border);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  /* Main content full width on mobile */
+  .main-content {
+    flex: 1;
+    width: 100%;
+    padding: 16px 16px 150px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Floating mini player on mobile */
+  .player {
+    position: fixed;
+    bottom: 66px;
+    left: 8px;
+    right: 8px;
+    width: calc(100% - 16px);
+    border-radius: 14px;
+    z-index: 1100;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--glass-border);
+  }
+
+  /* Mobile Bottom Navigation Bar */
+  .mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: rgba(18, 18, 24, 0.96);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 1200;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 500;
+    background: none;
+    border: none;
+    cursor: pointer;
+    flex: 1;
+    height: 100%;
+    transition: color 0.15s ease;
+  }
+
+  .mobile-nav-item.active {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .mobile-nav-item svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Responsive Grids */
+  .trending-skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+
+  .greeting {
+    font-size: 24px;
+  }
+
+  .track-row {
+    padding: 8px 10px;
+    gap: 10px;
+  }
+
+  .track-thumb {
+    width: 44px;
+    height: 44px;
+  }
+}
+
