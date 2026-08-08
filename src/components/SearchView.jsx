@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Plus, ListPlus, Check, Clock, X, Trash2 } from 'lucide-react';
 import { searchTracks } from '../services/search';
 import { storage } from '../services/storage';
+import EqualizerIcon from './EqualizerIcon';
 
 const GENRES = [
   { name: 'Pop Hits', query: 'top pop hits 2024', color: '#ec4899' },
@@ -438,9 +439,7 @@ export default function SearchView({ onPlayTrack, currentTrack, isPlaying, playl
               >
                 <div className="track-num">
                   {isActive && isPlaying ? (
-                    <div className="playing-bars">
-                      <span /><span /><span /><span />
-                    </div>
+                    <EqualizerIcon size={14} color="var(--accent)" />
                   ) : (
                     i + 1
                   )}

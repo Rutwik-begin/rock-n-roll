@@ -13,6 +13,9 @@ const LoginView = lazy(() => import('./components/LoginView'));
 const ProfileView = lazy(() => import('./components/ProfileView'));
 
 import AuthModal from './components/AuthModal';
+import Toast from './components/Toast';
+import CustomModal from './components/CustomModal';
+import QueueDrawer from './components/QueueDrawer';
 import { yt } from './services/youtube';
 import { storage } from './services/storage';
 import { searchTracks, getTrendingTelugu, getTrendingHindi, getTrendingEnglish, getTopGlobal, getTopIndia, resolveChartTrack } from './services/search';
@@ -41,6 +44,52 @@ export default function App() {
   const [topIndia, setTopIndia] = useState([]);
   const [topGlobalLoading, setTopGlobalLoading] = useState(true);
   const [topIndiaLoading, setTopIndiaLoading] = useState(true);
+
+  // --- Polish Infrastructure State ---
+  const [toasts, setToasts] = useState([]);
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
+  const [sleepTimerMinutes, setSleepTimerMinutes] = useState(null);
+  const [sleepTimerTimeLeft, setSleepTimerTimeLeft] = useState(null);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+
+  // Custom Glass Modal state
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    config: {},
+    onConfirm: () => {},
+  });
+
+  const addToast = useCallback((message, type = 'info') => {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalState(prev => ({ ...prev, isOpen: false }));
+  }, []);
+
+  const openInputModal = useCallback(({ title, placeholder, initialValue, confirmText, onConfirm }) => {
+    setModalState({
+      isOpen: true,
+      config: { type: 'input', title, placeholder, initialValue, confirmText: confirmText || 'Create' },
+      onConfirm
+    });
+  }, []);
+
+  const openConfirmModal = useCallback(({ title, message, confirmText, isDanger, onConfirm }) => {
+    setModalState({
+      isOpen: true,
+      config: { type: 'confirm', title, message, confirmText: confirmText || 'Confirm', isDanger },
+      onConfirm
+    });
+  }, []);
 
   const currentTrackRef = useRef(currentTrack);
   const queueRef = useRef(queue);
@@ -289,44 +338,103 @@ export default function App() {
     playTrack(prev, q, false);
   }, [playTrack]);
 
+  // --- Sleep Timer Countdown Effect ---
+  useEffect(() => {
+    if (sleepTimerTimeLeft === null) return;
+    if (sleepTimerTimeLeft <= 0) {
+      try { yt.pause(); } catch (e) {}
+      setIsPlaying(false);
+      setSleepTimerMinutes(null);
+      setSleepTimerTimeLeft(null);
+      addToast('Sleep timer ended. Playback paused.', 'info');
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setSleepTimerTimeLeft(prev => (prev !== null && prev > 0 ? prev - 1 : 0));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [sleepTimerTimeLeft, addToast]);
+
+  const handleSetSleepTimer = useCallback((mins) => {
+    if (mins === null) {
+      setSleepTimerMinutes(null);
+      setSleepTimerTimeLeft(null);
+      addToast('Sleep timer turned off', 'info');
+    } else {
+      setSleepTimerMinutes(mins);
+      setSleepTimerTimeLeft(mins * 60);
+      addToast(`Sleep timer set for ${mins} minutes`, 'success');
+    }
+  }, [addToast]);
+
+  const handleCycleSpeed = useCallback(() => {
+    const speeds = [1, 1.25, 1.5, 2, 0.8];
+    const nextSpeed = speeds[(speeds.indexOf(playbackSpeed) + 1) % speeds.length];
+    setPlaybackSpeed(nextSpeed);
+    addToast(`Playback speed set to ${nextSpeed}x`, 'info');
+  }, [playbackSpeed, addToast]);
+
   // --- Likes ---
   const isCurrentLiked = currentTrack ? storage.isLiked(currentTrack.id) : false;
 
   const handleToggleLike = useCallback(() => {
     if (!currentTrackRef.current) return;
-    const updated = storage.toggleLike(currentTrackRef.current);
+    const track = currentTrackRef.current;
+    const wasLiked = storage.isLiked(track.id);
+    const updated = storage.toggleLike(track);
     setLikedTracks(updated);
     triggerCloudSync(updated, undefined, undefined);
-  }, [triggerCloudSync]);
+    addToast(wasLiked ? `Removed "${track.title}" from Liked Songs` : `Saved "${track.title}" to Liked Songs`, wasLiked ? 'info' : 'success');
+  }, [triggerCloudSync, addToast]);
 
   // --- Playlists ---
   const handleCreatePlaylist = useCallback(() => {
-    const name = prompt('Playlist name:');
-    if (!name || !name.trim()) return;
-    const updated = storage.createPlaylist(name.trim());
-    setPlaylists(updated);
-    triggerCloudSync(undefined, updated, undefined);
-  }, [triggerCloudSync]);
+    openInputModal({
+      title: 'Create New Playlist',
+      placeholder: 'My Favorite Songs...',
+      confirmText: 'Create Playlist',
+      onConfirm: (name) => {
+        const updated = storage.createPlaylist(name);
+        setPlaylists(updated);
+        triggerCloudSync(undefined, updated, undefined);
+        addToast(`Created playlist "${name}"`, 'success');
+      }
+    });
+  }, [openInputModal, triggerCloudSync, addToast]);
 
   const handleDeletePlaylist = useCallback((plId) => {
-    if (!confirm('Delete this playlist?')) return;
-    const updated = storage.deletePlaylist(plId);
-    setPlaylists(updated);
-    setActiveView('library');
-    triggerCloudSync(undefined, updated, undefined);
-  }, [triggerCloudSync]);
+    const pl = playlists.find(p => p.id === plId);
+    openConfirmModal({
+      title: 'Delete Playlist',
+      message: `Are you sure you want to delete "${pl?.name || 'this playlist'}"? This action cannot be undone.`,
+      confirmText: 'Delete',
+      isDanger: true,
+      onConfirm: () => {
+        const updated = storage.deletePlaylist(plId);
+        setPlaylists(updated);
+        setActiveView('library');
+        triggerCloudSync(undefined, updated, undefined);
+        addToast(`Deleted playlist "${pl?.name || ''}"`, 'warning');
+      }
+    });
+  }, [playlists, openConfirmModal, triggerCloudSync, addToast]);
 
   const handleAddToPlaylist = useCallback((plId, track) => {
+    const pl = playlists.find(p => p.id === plId);
     const updated = storage.addToPlaylist(plId, track);
     setPlaylists(updated);
     triggerCloudSync(undefined, updated, undefined);
-  }, [triggerCloudSync]);
+    addToast(`Added "${track.title}" to ${pl?.name || 'playlist'}`, 'success');
+  }, [playlists, triggerCloudSync, addToast]);
 
   const handleRemoveFromPlaylist = useCallback((plId, trackId) => {
     const updated = storage.removeFromPlaylist(plId, trackId);
     setPlaylists(updated);
     triggerCloudSync(undefined, updated, undefined);
-  }, [triggerCloudSync]);
+    addToast('Removed track from playlist', 'info');
+  }, [triggerCloudSync, addToast]);
 
   // --- Podcast playback ---
   const handleStartPodcast = useCallback(async (query) => {
@@ -571,6 +679,24 @@ export default function App() {
         onAddToPlaylist={handleAddToPlaylist}
         onToggleLyrics={() => setShowLyrics(prev => !prev)}
         showLyrics={showLyrics}
+        onToggleQueue={() => setIsQueueOpen(q => !q)}
+        onOpenSleepTimer={() => {
+          openConfirmModal({
+            title: 'Sleep Timer',
+            message: sleepTimerMinutes
+              ? `Sleep timer currently set for ${sleepTimerMinutes}m (${Math.ceil((sleepTimerTimeLeft || 0) / 60)}m remaining). Select an option:`
+              : 'Automatically pause music after a set duration:',
+            confirmText: sleepTimerMinutes ? 'Turn Off Timer' : 'Set 30 Mins',
+            isDanger: !!sleepTimerMinutes,
+            onConfirm: () => {
+              if (sleepTimerMinutes) handleSetSleepTimer(null);
+              else handleSetSleepTimer(30);
+            }
+          });
+        }}
+        sleepTimerActive={sleepTimerTimeLeft ? Math.ceil(sleepTimerTimeLeft / 60) : null}
+        playbackSpeed={playbackSpeed}
+        onChangeSpeed={handleCycleSpeed}
       />
 
       {/* Mobile Bottom Navigation Bar */}
@@ -611,6 +737,27 @@ export default function App() {
           <span>{user ? 'Profile' : 'Account'}</span>
         </button>
       </nav>
+
+      {/* Polish UI Components */}
+      <Toast toasts={toasts} onDismiss={removeToast} />
+      <CustomModal
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        onConfirm={modalState.onConfirm}
+        modalConfig={modalState.config}
+      />
+      <QueueDrawer
+        isOpen={isQueueOpen}
+        onClose={() => setIsQueueOpen(false)}
+        queue={queue}
+        currentTrack={currentTrack}
+        isPlaying={isPlaying}
+        onPlayTrack={playTrack}
+        onClearQueue={() => {
+          setQueue([]);
+          addToast('Queue cleared', 'info');
+        }}
+      />
     </div>
   );
 }

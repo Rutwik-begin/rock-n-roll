@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Flame, ListPlus, Check, Plus, Music } from 'lucide-react';
+import EqualizerIcon from './EqualizerIcon';
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -304,9 +305,7 @@ export default function HomeView({
                 >
                   <div className={`trending-card-rank ${rank <= 3 ? 'top-3' : ''}`}>
                     {isActive && isPlaying ? (
-                      <div className="playing-bars" style={{ justifyContent: 'center' }}>
-                        <span /><span /><span /><span />
-                      </div>
+                      <EqualizerIcon size={16} color="var(--accent)" />
                     ) : (
                       rank
                     )}

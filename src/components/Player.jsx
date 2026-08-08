@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat,
   Volume2, VolumeX, Heart, ListPlus, Plus, Check, Mic2,
-  ChevronDown, Maximize2
+  ChevronDown, Maximize2, ListMusic, Clock, Gauge
 } from 'lucide-react';
 import { yt } from '../services/youtube';
 import { storage } from '../services/storage';
@@ -137,7 +137,12 @@ export default function Player({
   repeat, onToggleRepeat,
   isLiked, onToggleLike,
   playlists, onAddToPlaylist,
-  onToggleLyrics, showLyrics
+  onToggleLyrics, showLyrics,
+  onToggleQueue,
+  onOpenSleepTimer,
+  sleepTimerActive,
+  playbackSpeed = 1,
+  onChangeSpeed
 }) {
   const [volume, setVolume] = useState(() => storage.getVolume());
   const [muted, setMuted] = useState(false);
@@ -249,6 +254,15 @@ export default function Player({
             >
               <Heart size={20} fill={isLiked ? 'currentColor' : 'none'} />
             </button>
+            {onToggleQueue && (
+              <button
+                onClick={onToggleQueue}
+                title="Play Queue"
+                style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer' }}
+              >
+                <ListMusic size={20} />
+              </button>
+            )}
             {playlists && onAddToPlaylist && (
               <AddToPlaylistMenu track={currentTrack} playlists={playlists} onAddToPlaylist={onAddToPlaylist} />
             )}
@@ -312,23 +326,53 @@ export default function Player({
             </button>
           </div>
 
-          {/* Bottom Controls Row: Volume & Lyrics */}
+          {/* Bottom Controls Row: Volume & Lyrics & Sleep Timer */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-            {onToggleLyrics ? (
-              <button
-                className={`player-btn ${showLyrics ? 'active' : ''}`}
-                onClick={onToggleLyrics}
-                title="Lyrics"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
-                  borderRadius: 20, background: showLyrics ? 'var(--accent)' : 'rgba(255,255,255,0.08)',
-                  color: showLyrics ? '#000' : '#fff', fontWeight: 700, fontSize: 13, border: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <Mic2 size={16} /> Lyrics
-              </button>
-            ) : <div />}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {onToggleLyrics && (
+                <button
+                  className={`player-btn ${showLyrics ? 'active' : ''}`}
+                  onClick={onToggleLyrics}
+                  title="Lyrics"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
+                    borderRadius: 20, background: showLyrics ? 'var(--accent)' : 'rgba(255,255,255,0.08)',
+                    color: showLyrics ? '#000' : '#fff', fontWeight: 700, fontSize: 13, border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Mic2 size={16} /> Lyrics
+                </button>
+              )}
+              {onOpenSleepTimer && (
+                <button
+                  onClick={onOpenSleepTimer}
+                  title="Sleep Timer"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+                    borderRadius: 20, background: sleepTimerActive ? 'var(--accent)' : 'rgba(255,255,255,0.08)',
+                    color: sleepTimerActive ? '#000' : 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: 12, border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Clock size={14} /> {sleepTimerActive ? `${sleepTimerActive}m` : 'Sleep'}
+                </button>
+              )}
+              {onChangeSpeed && (
+                <button
+                  onClick={onChangeSpeed}
+                  title="Playback Speed"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+                    borderRadius: 20, background: playbackSpeed !== 1 ? 'var(--accent)' : 'rgba(255,255,255,0.08)',
+                    color: playbackSpeed !== 1 ? '#000' : 'rgba(255,255,255,0.8)', fontWeight: 600, fontSize: 12, border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Gauge size={14} /> {playbackSpeed}x
+                </button>
+              )}
+            </div>
 
             <div className="volume-slider" style={{ gap: 8 }}>
               <button className="player-btn" onClick={toggleMute}>
@@ -399,8 +443,28 @@ export default function Player({
         <PlayerTimeline onNext={onNext} />
       </div>
 
-      {/* Right: Volume, Lyrics & Fullscreen Expand button */}
+      {/* Right: Volume, Lyrics, Queue, Sleep Timer & Fullscreen Expand button */}
       <div className="player-right">
+        {onOpenSleepTimer && (
+          <button
+            className={`player-btn ${sleepTimerActive ? 'active' : ''}`}
+            onClick={onOpenSleepTimer}
+            title={sleepTimerActive ? `Sleep Timer: ${sleepTimerActive} min remaining` : 'Sleep Timer'}
+            style={{ marginRight: 6, color: sleepTimerActive ? 'var(--accent)' : 'inherit' }}
+          >
+            <Clock size={17} />
+          </button>
+        )}
+        {onToggleQueue && (
+          <button
+            className="player-btn"
+            onClick={onToggleQueue}
+            title="Play Queue"
+            style={{ marginRight: 6 }}
+          >
+            <ListMusic size={18} />
+          </button>
+        )}
         {onToggleLyrics && (
           <button 
             className={`player-btn ${showLyrics ? 'active' : ''}`} 
@@ -434,3 +498,4 @@ export default function Player({
     </footer>
   );
 }
+

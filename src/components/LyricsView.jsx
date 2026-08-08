@@ -129,9 +129,9 @@ export default function LyricsView({ track, onClose }) {
         {!loading && error && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, margin: 'auto', textAlign: 'center' }}>
             <Mic2 size={48} color="rgba(255,255,255,0.2)" />
-            <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 20, fontWeight: 700 }}>No Lyrics Found</div>
-            <div style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 400 }}>
-              We couldn't find lyrics for this specific track. It might be instrumental, a mashup, or simply not in our database yet.
+            <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: 20, fontWeight: 700 }}>No Synced Lyrics Found</div>
+            <div style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 420 }}>
+              We couldn't automatically find synced lyrics for "{track?.title}". It might be an instrumental, remix, or listed under a different title.
             </div>
           </div>
         )}
