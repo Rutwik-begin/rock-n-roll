@@ -429,93 +429,109 @@ export default function SearchView({ onPlayTrack, currentTrack, isPlaying, playl
         </div>
       )}
 
-      {/* TOP DETECTED MOVIE ALBUM CARD */}
-      {!loading && detectedAlbum && detectedAlbum.tracks && detectedAlbum.tracks.length > 0 && (
-        <div
-          className="search-album-card"
-          onClick={() => onOpenMovieAlbum && onOpenMovieAlbum(detectedAlbum.sourceTrack)}
-        >
-          <div
-            className="search-album-hero-bg"
-            style={{ backgroundImage: `url(${detectedAlbum.coverArt})` }}
-          />
-          <div className="search-album-content">
-            <img className="search-album-cover" src={detectedAlbum.coverArt} alt="" />
-            <div className="search-album-info">
-              <span className="search-album-tag">
-                <Disc3 size={14} className="spin-slow" /> MOVIE ALBUM / SOUNDTRACK
-              </span>
-              <div className="search-album-title">{detectedAlbum.movieTitle} (Full Album)</div>
-              <div className="search-album-sub">
-                {detectedAlbum.tracks.length} Songs in sequential order • Full Movie Soundtrack
-              </div>
-            </div>
-            <div className="search-album-actions">
-              <button
-                className="search-album-play-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPlayTrack(detectedAlbum.tracks[0], detectedAlbum.tracks);
-                }}
-              >
-                <Play size={16} fill="#000" /> Play Album
-              </button>
-              <button
-                className="btn-secondary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onOpenMovieAlbum) onOpenMovieAlbum(detectedAlbum.sourceTrack);
-                }}
-              >
-                View Songs →
-              </button>
-            </div>
+      {/* ═══════ SECTION 1: INDIVIDUAL SONGS & TRACKS ═══════ */}
+      {!loading && filteredResults.length > 0 && (
+        <div style={{ marginBottom: 36 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2, color: 'var(--text-muted)', marginBottom: 14 }}>
+            🎵 Songs & Tracks
+          </h3>
+          <div className="track-list">
+            {filteredResults.map((track, i) => {
+              const isActive = currentTrack && currentTrack.id === track.id;
+              return (
+                <div
+                  key={track.id}
+                  className={`track-row ${isActive ? 'playing' : ''}`}
+                  onClick={() => handlePlayTrackAndSaveHistory(track, filteredResults)}
+                >
+                  <div className="track-num">
+                    {isActive && isPlaying ? (
+                      <EqualizerIcon size={14} color="var(--accent)" />
+                    ) : (
+                      i + 1
+                    )}
+                  </div>
+                  <img className="track-thumb" src={track.thumbnail} alt="" />
+                  <div className="track-info">
+                    <div className="track-title">{track.title}</div>
+                    <div className="track-artist">{track.artist}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    <AddToPlaylistMenu
+                      track={track}
+                      playlists={playlists}
+                      onAddToPlaylist={onAddToPlaylist}
+                    />
+                  </div>
+                  <div className="track-duration">{formatDur(track.duration)}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {!loading && filteredResults.length > 0 && (
-        <div className="track-list">
-          {filteredResults.map((track, i) => {
-            const isActive = currentTrack && currentTrack.id === track.id;
-            return (
-              <div
-                key={track.id}
-                className={`track-row ${isActive ? 'playing' : ''}`}
-                onClick={() => handlePlayTrackAndSaveHistory(track, filteredResults)}
-              >
-                <div className="track-num">
-                  {isActive && isPlaying ? (
-                    <EqualizerIcon size={14} color="var(--accent)" />
-                  ) : (
-                    i + 1
-                  )}
+      {/* ═══════ SECTION 2: DEDICATED MOVIE ALBUMS & SOUNDTRACKS ═══════ */}
+      {!loading && detectedAlbum && detectedAlbum.tracks && detectedAlbum.tracks.length > 0 && (
+        <div className="movie-album-section">
+          <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2, color: 'var(--text-muted)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Disc3 size={18} className="text-accent spin-slow" /> Movie Albums & Soundtracks
+          </h3>
+
+          <div className="search-album-card-full">
+            <div className="search-album-header-row">
+              <img className="search-album-poster" src={detectedAlbum.coverArt} alt="" />
+              <div className="search-album-info">
+                <span className="search-album-tag">
+                  <Disc3 size={14} /> FULL MOVIE SOUNDTRACK
+                </span>
+                <div className="search-album-title">{detectedAlbum.movieTitle}</div>
+                <div className="search-album-sub">
+                  {detectedAlbum.tracks.length} Songs in Sequential Order
                 </div>
-                <img className="track-thumb" src={track.thumbnail} alt="" />
-                <div className="track-info">
-                  <div className="track-title">{track.title}</div>
-                  <div className="track-artist">{track.artist}</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
-                  {onOpenMovieAlbum && (
-                    <button
-                      className="movie-album-btn"
-                      onClick={(e) => { e.stopPropagation(); onOpenMovieAlbum(track); }}
-                      title="View Movie Album / Full Soundtrack"
-                    >
-                      <Disc3 size={17} />
-                    </button>
-                  )}
-                  <AddToPlaylistMenu
-                    track={track}
-                    playlists={playlists}
-                    onAddToPlaylist={onAddToPlaylist}
-                  />
-                </div>
-                <div className="track-duration">{formatDur(track.duration)}</div>
               </div>
-            );
-          })}
+              <div className="search-album-actions">
+                <button
+                  className="search-album-play-btn"
+                  onClick={() => onPlayTrack(detectedAlbum.tracks[0], detectedAlbum.tracks)}
+                >
+                  <Play size={16} fill="#000" /> Play Full Album
+                </button>
+              </div>
+            </div>
+
+            {/* ORDERED MOVIE SONGS LIST */}
+            <div className="search-album-ordered-title">
+              Movie Tracklist (In Order)
+            </div>
+            <div className="search-album-ordered-list">
+              {detectedAlbum.tracks.map((albumTrack, idx) => {
+                const isActive = currentTrack && currentTrack.id === albumTrack.id;
+                return (
+                  <div
+                    key={albumTrack.id + '-' + idx}
+                    className={`search-album-ordered-item ${isActive ? 'active' : ''}`}
+                    onClick={() => handlePlayTrackAndSaveHistory(albumTrack, detectedAlbum.tracks)}
+                  >
+                    <div className="search-album-item-num">
+                      {isActive && isPlaying ? (
+                        <EqualizerIcon size={14} color="var(--accent)" />
+                      ) : (
+                        `${idx + 1}.`
+                      )}
+                    </div>
+                    <div className="search-album-item-info">
+                      <div className={`search-album-item-title ${isActive ? 'text-accent' : ''}`}>
+                        {albumTrack.title}
+                      </div>
+                      <div className="search-album-item-artist">{albumTrack.artist}</div>
+                    </div>
+                    <div className="search-album-item-dur">{formatDur(albumTrack.duration)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
