@@ -17,6 +17,8 @@ import Toast from './components/Toast';
 import CustomModal from './components/CustomModal';
 import QueueDrawer from './components/QueueDrawer';
 import MovieAlbumModal from './components/MovieAlbumModal';
+import OnboardingModal from './components/OnboardingModal';
+import RockBotWidget from './components/RockBotWidget';
 import { yt } from './services/youtube';
 import { storage } from './services/storage';
 import { searchTracks, getTrendingTelugu, getTrendingHindi, getTrendingEnglish, getTopGlobal, getTopIndia, resolveChartTrack } from './services/search';
@@ -54,6 +56,7 @@ export default function App() {
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [movieAlbumTrack, setMovieAlbumTrack] = useState(null);
   const [isMovieAlbumOpen, setIsMovieAlbumOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
 
   const handleOpenMovieAlbum = useCallback((track) => {
     if (!track) return;
@@ -642,6 +645,7 @@ export default function App() {
               likedTracks={likedTracks}
               playlists={playlists}
               recentTracks={recentTracks}
+              onOpenOnboarding={() => setIsOnboardingOpen(true)}
             />
           )}
           {activeView === 'home' && (
@@ -779,6 +783,15 @@ export default function App() {
         onPlayTrack={playTrack}
         playlists={playlists}
         onAddToPlaylist={handleAddToPlaylist}
+        onShowToast={addToast}
+      />
+      <OnboardingModal
+        isOpen={isOnboardingOpen}
+        onClose={() => setIsOnboardingOpen(false)}
+        onSave={() => addToast('Music preferences saved!', 'success')}
+      />
+      <RockBotWidget
+        onPlayTrack={playTrack}
         onShowToast={addToast}
       />
     </div>

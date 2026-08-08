@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
-import { User, Key, LogOut, CheckCircle, AlertCircle, Loader, ShieldCheck, Heart, Music, ListMusic, Sparkles, Edit3 } from 'lucide-react';
-import { updateUserProfile, updateUserPassword } from '../services/supabase';
+import ApiHealthDashboard from './ApiHealthDashboard';
 
-export default function ProfileView({ user, setUser, onSignOut, likedTracks = [], playlists = [], recentTracks = [] }) {
+export default function ProfileView({ user, setUser, onSignOut, likedTracks = [], playlists = [], recentTracks = [], onOpenOnboarding }) {
   const initialDisplayName = user?.user_metadata?.display_name || (user?.email ? user.email.split('@')[0] : 'Music Fan');
   
   const [displayName, setDisplayName] = useState(initialDisplayName);
@@ -373,6 +371,30 @@ export default function ProfileView({ user, setUser, onSignOut, likedTracks = []
         </div>
 
       </div>
+
+      {/* Preferences Action Card */}
+      {onOpenOnboarding && (
+        <div style={{
+          marginTop: 32, padding: 24, borderRadius: 'var(--radius-xl)',
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(18, 18, 24, 0.85))',
+          border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16
+        }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Sparkles size={20} className="text-purple" /> AI Recommendation Preferences
+            </h3>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+              Customize your favorite artists & genres so Rock Bot AI can tailor music recommendations for you.
+            </p>
+          </div>
+          <button className="btn-primary" onClick={onOpenOnboarding} style={{ background: '#8b5cf6', color: '#fff' }}>
+            Edit Favorite Artists
+          </button>
+        </div>
+      )}
+
+      {/* System Health & Daily Quota Dashboard */}
+      <ApiHealthDashboard />
     </div>
   );
 }
