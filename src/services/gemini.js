@@ -122,3 +122,73 @@ function getSmartFallbackResponse(userMessage, prefs) {
 
   return { text, recommendations };
 }
+
+/**
+ * AI Movie Album Verification Agent
+ * Uses Gemini AI to review raw YouTube candidate tracks, filter out sequels (e.g. Pushpa 2 when searching Pushpa 1),
+ * filter out wrong language dubs (e.g. Bengali/Tamil), and return ONLY the valid tracks for the target movie.
+ */
+export async function verifyMovieAlbumWithAI(movieTitle, candidateTracks = []) {
+  if (!candidateTracks || candidateTracks.length === 0) return candidateTracks;
+
+  const quota = getDailyQuotaStats();
+  if (quota.remainingToday <= 0) return candidateTracks;
+
+  const trackListSummary = candidateTracks.map((t, idx) => ({
+    index: idx,
+    id: t.id,
+    title: t.title,
+    artist: t.artist
+  }));
+
+  const prompt = `
+You are a precision AI Music Discography Verification Agent.
+Target Movie: "${movieTitle}"
+
+Candidate Tracks list:
+${JSON.stringify(trackListSummary, null, 2)}
+
+Instructions:
+1. Identify the exact movie part/title (e.g., if target movie is "Pushpa" or "Pushpa 1", exclude "Pushpa 2 The Rule" or sequels unless requested).
+2. Exclude songs dubbed in secondary languages (e.g., Bengali, Tamil, Malayalam, Hindi) if the movie is originally Telugu/Hindi, unless the query explicitly specifies that language.
+3. Exclude duplicate songs or trailer audio.
+4. Select ONLY the valid song indices from the candidate list that truly belong to the movie "${movieTitle}".
+5. Output ONLY a valid JSON array of valid indices in order. Example:
+\`\`\`json
+[0, 1, 3, 5]
+\`\`\`
+  `;
+
+  try {
+    if (!API_KEY) return null; // Fallback to client-side filter
+
+    const response = await fetch(`${GEMINI_API_URL}?key=${API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }]
+      })
+    });
+
+    if (!response.ok) return null;
+    const data = await response.json();
+    incrementUsage();
+
+    const textOutput = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const jsonMatch = textOutput.match(/```json\s*([\s\S]*?)\s*```/);
+    
+    if (jsonMatch && jsonMatch[1]) {
+      const validIndices = JSON.parse(jsonMatch[1]);
+      if (Array.isArray(validIndices) && validIndices.length > 0) {
+        return validIndices
+          .map(i => candidateTracks[i])
+          .filter(Boolean);
+      }
+    }
+  } catch (err) {
+    console.warn('Gemini album verification failed, using client filter fallback:', err);
+  }
+
+  return null;
+}
+

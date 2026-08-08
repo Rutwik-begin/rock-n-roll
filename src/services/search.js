@@ -456,17 +456,22 @@ export function extractMovieTitle(title = '', artist = '', rawQuery = '') {
   return cleanMovieName(title);
 }
 
+import { verifyMovieAlbumWithAI } from './gemini';
+
 const COMPILATION_PATTERNS = /\b(jukebox|full songs|audio jukebox|video jukebox|compilation|nonstop|non-stop|full album|mashup|mega mix|megamix|all songs|best of|collection|trailer|teaser)\b/i;
-const OTHER_LANGUAGES = ['hindi', 'tamil', 'malayalam', 'kannada'];
+const OTHER_LANGUAGES = ['hindi', 'tamil', 'malayalam', 'kannada', 'bengali', 'bangla', 'marathi'];
 
 /**
  * Filter raw movie search results into clean, individual audio songs.
- * Filters out 40-min full jukeboxes, trailers, and unrequested language dubs.
+ * Filters out 40-min full jukeboxes, trailers, sequels, and unrequested language dubs.
  */
 export function filterMovieSongs(tracks, targetMovie = '', rawQuery = '') {
   if (!tracks) return [];
   const queryLower = (rawQuery || targetMovie).toLowerCase();
   const requestedLang = OTHER_LANGUAGES.find(lang => queryLower.includes(lang));
+
+  // Sequel detection: Is the user searching for Part 2 / Sequel or Part 1?
+  const isSequelQuery = /\b(2|part\s*2|rule|the\s*rule|sequel)\b/i.test(queryLower);
 
   const seenTitles = new Set();
   const filtered = [];
@@ -483,16 +488,31 @@ export function filterMovieSongs(tracks, targetMovie = '', rawQuery = '') {
     // 2. Exclude jukebox compilation keywords
     if (COMPILATION_PATTERNS.test(title)) continue;
 
-    // 3. Exclude unrequested language dubs (e.g. Tamil/Malayalam/Hindi if user searched Pushpa)
+    // 3. Sequel Isolation: Exclude Part 2 songs if searching for Part 1, and vice-versa
+    if (!isSequelQuery) {
+      if (/\b(pushpa\s*2|part\s*2|the\s*rule|2\s*the\s*rule)\b/i.test(titleLower)) continue;
+    } else {
+      if (/\b(pushpa\s*1|the\s*rise|part\s*1)\b/i.test(titleLower)) continue;
+    }
+
+    // 4. Exclude unrequested language dubs (e.g. Bengali/Tamil/Malayalam/Hindi if user searched Pushpa)
     if (!requestedLang) {
-      const hasOtherLang = OTHER_LANGUAGES.some(lang => titleLower.includes(`(${lang})`) || titleLower.includes(`- ${lang}`) || titleLower.includes(`${lang} jukebox`));
+      const hasOtherLang = OTHER_LANGUAGES.some(lang =>
+        titleLower.includes(`(${lang})`) ||
+        titleLower.includes(`- ${lang}`) ||
+        titleLower.includes(`${lang} lyrical`) ||
+        titleLower.includes(`${lang} video`) ||
+        titleLower.includes(`${lang} audio`) ||
+        titleLower.includes(`${lang} song`) ||
+        titleLower.includes(`${lang} jukebox`)
+      );
       if (hasOtherLang) continue;
     } else {
       const unwantedLangs = OTHER_LANGUAGES.filter(l => l !== requestedLang);
       if (unwantedLangs.some(l => titleLower.includes(`(${l})`) || titleLower.includes(`- ${l}`))) continue;
     }
 
-    // 4. Deduplicate song names
+    // 5. Deduplicate song names
     const baseName = titleLower
       .replace(/\(from\s+[^)]+\)/gi, '')
       .replace(/\[[^\]]+\]/gi, '')
@@ -519,8 +539,13 @@ export async function fetchMovieAlbum(track) {
   const movieTitle = extractMovieTitle(track.title, track.artist);
   const searchQuery = `${movieTitle} movie songs audio`;
 
-  const rawTracks = await searchTracks(searchQuery, 20);
-  const pureAlbumTracks = filterMovieSongs(rawTracks, movieTitle, movieTitle);
+  const rawTracks = await searchTracks(searchQuery, 25);
+  
+  // Try AI verification agent first, fallback to filterMovieSongs
+  let pureAlbumTracks = await verifyMovieAlbumWithAI(movieTitle, rawTracks);
+  if (!pureAlbumTracks || pureAlbumTracks.length === 0) {
+    pureAlbumTracks = filterMovieSongs(rawTracks, movieTitle, movieTitle);
+  }
 
   return {
     movieTitle,
@@ -556,8 +581,14 @@ export async function searchAlbumsAndTracks(query, limit = 25) {
   if (targetMovie && targetMovie.length >= 3) {
     const albumQuery = `${targetMovie} movie songs audio`;
     const rawAlbumTracks = await searchTracks(albumQuery, 25);
-    let pureAlbumTracks = filterMovieSongs(rawAlbumTracks, targetMovie, query);
+    
+    // Try Gemini AI Album Verification Agent first
+    let pureAlbumTracks = await verifyMovieAlbumWithAI(targetMovie, rawAlbumTracks);
 
+    // Fallback to strict client-side sequel & language filter
+    if (!pureAlbumTracks || pureAlbumTracks.length < 2) {
+      pureAlbumTracks = filterMovieSongs(rawAlbumTracks, targetMovie, query);
+    }
     if (pureAlbumTracks.length < 2) {
       pureAlbumTracks = filterMovieSongs(tracks, targetMovie, query);
     }
@@ -576,6 +607,7 @@ export async function searchAlbumsAndTracks(query, limit = 25) {
 
   return { album, tracks };
 }
+
 
 
 
