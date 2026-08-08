@@ -449,9 +449,36 @@ export async function fetchMovieAlbum(track) {
 
   return {
     movieTitle,
-    albumTitle: `${movieTitle} Soundtrack`,
+    albumTitle: `${movieTitle} (Original Soundtrack)`,
     coverArt: track.thumbnail,
     tracks: tracks.length > 0 ? tracks : [track]
   };
 }
+
+/**
+ * Perform search returning both detected Movie Album card and song tracks
+ */
+export async function searchAlbumsAndTracks(query, limit = 25) {
+  const tracks = await searchTracks(query, limit);
+  if (!tracks || tracks.length === 0) {
+    return { album: null, tracks: [] };
+  }
+
+  let album = null;
+  const topTrack = tracks[0];
+  const detectedMovie = extractMovieTitle(topTrack.title, topTrack.artist);
+
+  if (detectedMovie && detectedMovie.length >= 3) {
+    const albumData = await fetchMovieAlbum(topTrack);
+    if (albumData && albumData.tracks && albumData.tracks.length > 0) {
+      album = {
+        ...albumData,
+        sourceTrack: topTrack,
+      };
+    }
+  }
+
+  return { album, tracks };
+}
+
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, ListPlus, Check, Clock, X, Trash2, Disc3 } from 'lucide-react';
-import { searchTracks } from '../services/search';
+import { Search, Plus, ListPlus, Check, Clock, X, Trash2, Disc3, Play } from 'lucide-react';
+import { searchTracks, searchAlbumsAndTracks } from '../services/search';
 import { storage } from '../services/storage';
 import EqualizerIcon from './EqualizerIcon';
 
@@ -120,6 +120,7 @@ function isPureSong(track) {
 export default function SearchView({ onPlayTrack, currentTrack, isPlaying, playlists, onAddToPlaylist, onOpenMovieAlbum, initialQuery = '' }) {
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState([]);
+  const [detectedAlbum, setDetectedAlbum] = useState(null);
   const [loading, setLoading] = useState(false);
   const [typeFilter, setTypeFilter] = useState('all');
   const [durationFilter, setDurationFilter] = useState('all');
@@ -127,13 +128,14 @@ export default function SearchView({ onPlayTrack, currentTrack, isPlaying, playl
   const debounceRef = useRef(null);
 
   const doSearch = useCallback(async (q, overrideType) => {
-    if (!q.trim()) { setResults([]); return; }
+    if (!q.trim()) { setResults([]); setDetectedAlbum(null); return; }
     setLoading(true);
     try {
       const activeType = overrideType || typeFilter;
       const searchQuery = activeType === 'podcasts' ? `${q} podcast` : q;
-      const tracks = await searchTracks(searchQuery);
-      setResults(tracks);
+      const data = await searchAlbumsAndTracks(searchQuery);
+      setResults(data.tracks || []);
+      setDetectedAlbum(data.album || null);
     } catch (err) {
       console.warn('Search error:', err);
     }
@@ -424,6 +426,51 @@ export default function SearchView({ onPlayTrack, currentTrack, isPlaying, playl
               <div className="skeleton" style={{ width: 32, height: 12 }} />
             </div>
           ))}
+        </div>
+      )}
+
+      {/* TOP DETECTED MOVIE ALBUM CARD */}
+      {!loading && detectedAlbum && detectedAlbum.tracks && detectedAlbum.tracks.length > 0 && (
+        <div
+          className="search-album-card"
+          onClick={() => onOpenMovieAlbum && onOpenMovieAlbum(detectedAlbum.sourceTrack)}
+        >
+          <div
+            className="search-album-hero-bg"
+            style={{ backgroundImage: `url(${detectedAlbum.coverArt})` }}
+          />
+          <div className="search-album-content">
+            <img className="search-album-cover" src={detectedAlbum.coverArt} alt="" />
+            <div className="search-album-info">
+              <span className="search-album-tag">
+                <Disc3 size={14} className="spin-slow" /> MOVIE ALBUM / SOUNDTRACK
+              </span>
+              <div className="search-album-title">{detectedAlbum.movieTitle} (Full Album)</div>
+              <div className="search-album-sub">
+                {detectedAlbum.tracks.length} Songs in sequential order • Full Movie Soundtrack
+              </div>
+            </div>
+            <div className="search-album-actions">
+              <button
+                className="search-album-play-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPlayTrack(detectedAlbum.tracks[0], detectedAlbum.tracks);
+                }}
+              >
+                <Play size={16} fill="#000" /> Play Album
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onOpenMovieAlbum) onOpenMovieAlbum(detectedAlbum.sourceTrack);
+                }}
+              >
+                View Songs →
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
