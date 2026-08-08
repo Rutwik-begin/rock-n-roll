@@ -456,16 +456,71 @@ export function extractMovieTitle(title = '', artist = '', rawQuery = '') {
   return cleanMovieName(title);
 }
 
+const COMPILATION_PATTERNS = /\b(jukebox|full songs|audio jukebox|video jukebox|compilation|nonstop|non-stop|full album|mashup|mega mix|megamix|all songs|best of|collection|trailer|teaser)\b/i;
+const OTHER_LANGUAGES = ['hindi', 'tamil', 'malayalam', 'kannada'];
+
+/**
+ * Filter raw movie search results into clean, individual audio songs.
+ * Filters out 40-min full jukeboxes, trailers, and unrequested language dubs.
+ */
+export function filterMovieSongs(tracks, targetMovie = '', rawQuery = '') {
+  if (!tracks) return [];
+  const queryLower = (rawQuery || targetMovie).toLowerCase();
+  const requestedLang = OTHER_LANGUAGES.find(lang => queryLower.includes(lang));
+
+  const seenTitles = new Set();
+  const filtered = [];
+
+  for (const track of tracks) {
+    if (!track) continue;
+    const dur = track.duration || 0;
+    const title = track.title || '';
+    const titleLower = title.toLowerCase();
+
+    // 1. Exclude long compilation videos (> 450s / 7.5 mins)
+    if (dur > 450) continue;
+
+    // 2. Exclude jukebox compilation keywords
+    if (COMPILATION_PATTERNS.test(title)) continue;
+
+    // 3. Exclude unrequested language dubs (e.g. Tamil/Malayalam/Hindi if user searched Pushpa)
+    if (!requestedLang) {
+      const hasOtherLang = OTHER_LANGUAGES.some(lang => titleLower.includes(`(${lang})`) || titleLower.includes(`- ${lang}`) || titleLower.includes(`${lang} jukebox`));
+      if (hasOtherLang) continue;
+    } else {
+      const unwantedLangs = OTHER_LANGUAGES.filter(l => l !== requestedLang);
+      if (unwantedLangs.some(l => titleLower.includes(`(${l})`) || titleLower.includes(`- ${l}`))) continue;
+    }
+
+    // 4. Deduplicate song names
+    const baseName = titleLower
+      .replace(/\(from\s+[^)]+\)/gi, '')
+      .replace(/\[[^\]]+\]/gi, '')
+      .replace(/\(official\s*video\)/gi, '')
+      .replace(/\(lyrical\)/gi, '')
+      .replace(/\(audio\)/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (seenTitles.has(baseName)) continue;
+    seenTitles.add(baseName);
+
+    filtered.push(track);
+  }
+
+  return filtered;
+}
+
 /**
  * Fetch all tracks belonging to a movie album
  */
 export async function fetchMovieAlbum(track) {
   if (!track) return null;
   const movieTitle = extractMovieTitle(track.title, track.artist);
-  const searchQuery = `${movieTitle} movie full songs audio jukebox songs`;
+  const searchQuery = `${movieTitle} movie songs audio`;
 
-  const tracks = await searchTracks(searchQuery, 20);
-  const pureAlbumTracks = tracks.filter(t => !/\b(trailer|teaser)\b/i.test(t.title));
+  const rawTracks = await searchTracks(searchQuery, 20);
+  const pureAlbumTracks = filterMovieSongs(rawTracks, movieTitle, movieTitle);
 
   return {
     movieTitle,
@@ -499,12 +554,16 @@ export async function searchAlbumsAndTracks(query, limit = 25) {
 
   let album = null;
   if (targetMovie && targetMovie.length >= 3) {
-    const jukeboxQuery = `${targetMovie} movie full songs audio jukebox`;
-    const albumTracks = await searchTracks(jukeboxQuery, 20);
-    const pureAlbumTracks = albumTracks.filter(t => !/\b(trailer|teaser)\b/i.test(t.title));
+    const albumQuery = `${targetMovie} movie songs audio`;
+    const rawAlbumTracks = await searchTracks(albumQuery, 25);
+    let pureAlbumTracks = filterMovieSongs(rawAlbumTracks, targetMovie, query);
+
+    if (pureAlbumTracks.length < 2) {
+      pureAlbumTracks = filterMovieSongs(tracks, targetMovie, query);
+    }
 
     if (pureAlbumTracks.length > 0) {
-      const coverTrack = pureAlbumTracks[0] || tracks[0];
+      const coverTrack = pureAlbumTracks[0];
       album = {
         movieTitle: targetMovie,
         albumTitle: `${targetMovie} (Full Movie Album)`,
@@ -517,6 +576,7 @@ export async function searchAlbumsAndTracks(query, limit = 25) {
 
   return { album, tracks };
 }
+
 
 
 
