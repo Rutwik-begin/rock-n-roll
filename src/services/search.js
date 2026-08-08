@@ -457,9 +457,32 @@ export function extractMovieTitle(title = '', artist = '', rawQuery = '') {
 }
 
 import { verifyMovieAlbumWithAI } from './gemini';
+import { getOfficialDiscography } from './discography';
 
 const COMPILATION_PATTERNS = /\b(jukebox|full songs|audio jukebox|video jukebox|compilation|nonstop|non-stop|full album|mashup|mega mix|megamix|all songs|best of|collection|trailer|teaser)\b/i;
 const OTHER_LANGUAGES = ['hindi', 'tamil', 'malayalam', 'kannada', 'bengali', 'bangla', 'marathi'];
+
+/**
+ * Build album tracks using precision official discography database
+ */
+async function buildTracksFromDiscography(disco) {
+  if (!disco || !disco.officialSongs) return [];
+  const tracks = [];
+  for (const songObj of disco.officialSongs) {
+    try {
+      const found = await searchTracks(songObj.search, 1);
+      if (found && found.length > 0) {
+        tracks.push({
+          ...found[0],
+          title: songObj.title
+        });
+      }
+    } catch (e) {
+      console.warn('Discography search error for', songObj.title, e);
+    }
+  }
+  return tracks;
+}
 
 /**
  * Filter raw movie search results into clean, individual audio songs.
@@ -490,9 +513,9 @@ export function filterMovieSongs(tracks, targetMovie = '', rawQuery = '') {
 
     // 3. Sequel Isolation: Exclude Part 2 songs if searching for Part 1, and vice-versa
     if (!isSequelQuery) {
-      if (/\b(pushpa\s*2|part\s*2|the\s*rule|2\s*the\s*rule)\b/i.test(titleLower)) continue;
+      if (/\b(pushpa\s*2|part\s*2|the\s*rule|2\s*the\s*rule|angaaron|sooseki|kissik|peelings)\b/i.test(titleLower)) continue;
     } else {
-      if (/\b(pushpa\s*1|the\s*rise|part\s*1)\b/i.test(titleLower)) continue;
+      if (/\b(pushpa\s*1|the\s*rise|part\s*1|srivalli|daakko)\b/i.test(titleLower)) continue;
     }
 
     // 4. Exclude unrequested language dubs (e.g. Bengali/Tamil/Malayalam/Hindi if user searched Pushpa)
@@ -504,7 +527,9 @@ export function filterMovieSongs(tracks, targetMovie = '', rawQuery = '') {
         titleLower.includes(`${lang} video`) ||
         titleLower.includes(`${lang} audio`) ||
         titleLower.includes(`${lang} song`) ||
-        titleLower.includes(`${lang} jukebox`)
+        titleLower.includes(`${lang} jukebox`) ||
+        titleLower.includes(`bangla`) ||
+        titleLower.includes(`hindi`)
       );
       if (hasOtherLang) continue;
     } else {
@@ -537,11 +562,25 @@ export function filterMovieSongs(tracks, targetMovie = '', rawQuery = '') {
 export async function fetchMovieAlbum(track) {
   if (!track) return null;
   const movieTitle = extractMovieTitle(track.title, track.artist);
-  const searchQuery = `${movieTitle} movie songs audio`;
 
+  // 1. Check Precision Discography Agent first
+  const disco = getOfficialDiscography(movieTitle);
+  if (disco) {
+    const discoTracks = await buildTracksFromDiscography(disco);
+    if (discoTracks.length > 0) {
+      return {
+        movieTitle: disco.title,
+        albumTitle: `${disco.title} (Official Album)`,
+        coverArt: discoTracks[0].thumbnail || track.thumbnail,
+        tracks: discoTracks
+      };
+    }
+  }
+
+  // 2. AI verification agent or smart client fallback
+  const searchQuery = `${movieTitle} movie songs audio`;
   const rawTracks = await searchTracks(searchQuery, 25);
   
-  // Try AI verification agent first, fallback to filterMovieSongs
   let pureAlbumTracks = await verifyMovieAlbumWithAI(movieTitle, rawTracks);
   if (!pureAlbumTracks || pureAlbumTracks.length === 0) {
     pureAlbumTracks = filterMovieSongs(rawTracks, movieTitle, movieTitle);
@@ -579,29 +618,45 @@ export async function searchAlbumsAndTracks(query, limit = 25) {
 
   let album = null;
   if (targetMovie && targetMovie.length >= 3) {
-    const albumQuery = `${targetMovie} movie songs audio`;
-    const rawAlbumTracks = await searchTracks(albumQuery, 25);
-    
-    // Try Gemini AI Album Verification Agent first
-    let pureAlbumTracks = await verifyMovieAlbumWithAI(targetMovie, rawAlbumTracks);
-
-    // Fallback to strict client-side sequel & language filter
-    if (!pureAlbumTracks || pureAlbumTracks.length < 2) {
-      pureAlbumTracks = filterMovieSongs(rawAlbumTracks, targetMovie, query);
+    // 1. Check Precision Discography Database Engine first
+    const disco = getOfficialDiscography(query) || getOfficialDiscography(targetMovie);
+    if (disco) {
+      const discoTracks = await buildTracksFromDiscography(disco);
+      if (discoTracks.length > 0) {
+        album = {
+          movieTitle: disco.title,
+          albumTitle: `${disco.title} (Official Soundtrack)`,
+          coverArt: discoTracks[0].thumbnail,
+          tracks: discoTracks,
+          sourceTrack: discoTracks[0],
+        };
+      }
     }
-    if (pureAlbumTracks.length < 2) {
-      pureAlbumTracks = filterMovieSongs(tracks, targetMovie, query);
-    }
 
-    if (pureAlbumTracks.length > 0) {
-      const coverTrack = pureAlbumTracks[0];
-      album = {
-        movieTitle: targetMovie,
-        albumTitle: `${targetMovie} (Full Movie Album)`,
-        coverArt: coverTrack.thumbnail,
-        tracks: pureAlbumTracks,
-        sourceTrack: coverTrack,
-      };
+    // 2. Fallback to Gemini AI Verification Agent or Strict Filter
+    if (!album) {
+      const albumQuery = `${targetMovie} movie songs audio`;
+      const rawAlbumTracks = await searchTracks(albumQuery, 25);
+      
+      let pureAlbumTracks = await verifyMovieAlbumWithAI(targetMovie, rawAlbumTracks);
+
+      if (!pureAlbumTracks || pureAlbumTracks.length < 2) {
+        pureAlbumTracks = filterMovieSongs(rawAlbumTracks, targetMovie, query);
+      }
+      if (pureAlbumTracks.length < 2) {
+        pureAlbumTracks = filterMovieSongs(tracks, targetMovie, query);
+      }
+
+      if (pureAlbumTracks.length > 0) {
+        const coverTrack = pureAlbumTracks[0];
+        album = {
+          movieTitle: targetMovie,
+          albumTitle: `${targetMovie} (Full Movie Album)`,
+          coverArt: coverTrack.thumbnail,
+          tracks: pureAlbumTracks,
+          sourceTrack: coverTrack,
+        };
+      }
     }
   }
 
