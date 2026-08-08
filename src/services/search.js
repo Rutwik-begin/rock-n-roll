@@ -401,40 +401,59 @@ export async function getTrendingEnglish() {
 }
 
 /**
+  Clean noise terms like Trailer, Teaser, Lyrical, Official Video from movie titles
+ */
+export function cleanMovieName(str) {
+  if (!str) return '';
+  return str
+    .replace(/\(From\s+["']?([^"'()|-]+)["']?\)/gi, '$1')
+    .replace(/\(Original\s*Motion\s*Picture\s*Soundtrack\)/gi, '')
+    .replace(/\(Official\s*Trailer\)/gi, '')
+    .replace(/\[Official\s*Trailer\]/gi, '')
+    .replace(/\b(official|trailer|teaser|lyrical|video|audio|hd|4k|extended|film|version|full\s*songs|jukebox)\b/gi, '')
+    .replace(/[|-].*$/, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+/**
  * Extract Movie/Album Title from Track metadata
  */
-export function extractMovieTitle(title = '', artist = '') {
+export function extractMovieTitle(title = '', artist = '', rawQuery = '') {
   const combined = `${title} ${artist}`;
 
   // Pattern 1: (From "Movie Name") or (From Movie Name)
   const fromMatch = combined.match(/\bfrom\s+["']?([^"'()|-]+)["']?/i);
   if (fromMatch && fromMatch[1].trim()) {
-    return fromMatch[1].trim();
+    const cand = cleanMovieName(fromMatch[1]);
+    if (cand.length >= 3) return cand;
   }
 
-  // Pattern 2: Title / Movie Name
-  if (title.includes('/')) {
-    const parts = title.split('/');
-    if (parts.length > 1 && parts[parts.length - 1].trim().length > 2) {
-      return parts[parts.length - 1].trim();
-    }
-  }
-
-  // Pattern 3: Movie Name Jukebox / Soundtrack
-  const jukeboxMatch = combined.match(/([^|-]+)\s+(jukebox|soundtrack|full songs|movie|ost)/i);
-  if (jukeboxMatch && jukeboxMatch[1].trim().length > 2) {
-    return jukeboxMatch[1].trim();
-  }
-
-  // Fallback: If title has hyphen e.g. "Song Name - Movie Name"
+  // Pattern 2: Title - Movie Name
   if (title.includes('-')) {
     const parts = title.split('-');
-    if (parts.length > 1 && parts[1].trim().length > 2) {
-      return parts[1].trim();
+    if (parts.length > 1) {
+      const candidate = cleanMovieName(parts[1]);
+      if (candidate.length >= 3) return candidate;
     }
   }
 
-  return title;
+  // Pattern 3: Title / Movie Name
+  if (title.includes('/')) {
+    const parts = title.split('/');
+    if (parts.length > 1) {
+      const candidate = cleanMovieName(parts[parts.length - 1]);
+      if (candidate.length >= 3) return candidate;
+    }
+  }
+
+  // Fallback: Use clean raw search query or clean title
+  if (rawQuery && rawQuery.trim().length >= 3) {
+    const cleanedQuery = cleanMovieName(rawQuery);
+    if (cleanedQuery.length >= 3) return cleanedQuery;
+  }
+
+  return cleanMovieName(title);
 }
 
 /**
@@ -446,12 +465,13 @@ export async function fetchMovieAlbum(track) {
   const searchQuery = `${movieTitle} movie full songs audio jukebox songs`;
 
   const tracks = await searchTracks(searchQuery, 20);
+  const pureAlbumTracks = tracks.filter(t => !/\b(trailer|teaser)\b/i.test(t.title));
 
   return {
     movieTitle,
-    albumTitle: `${movieTitle} (Original Soundtrack)`,
+    albumTitle: `${movieTitle} (Full Movie Album)`,
     coverArt: track.thumbnail,
-    tracks: tracks.length > 0 ? tracks : [track]
+    tracks: pureAlbumTracks.length > 0 ? pureAlbumTracks : [track]
   };
 }
 
@@ -464,21 +484,39 @@ export async function searchAlbumsAndTracks(query, limit = 25) {
     return { album: null, tracks: [] };
   }
 
-  let album = null;
-  const topTrack = tracks[0];
-  const detectedMovie = extractMovieTitle(topTrack.title, topTrack.artist);
+  // Determine target movie title from raw search query or top results
+  let targetMovie = cleanMovieName(query);
 
-  if (detectedMovie && detectedMovie.length >= 3) {
-    const albumData = await fetchMovieAlbum(topTrack);
-    if (albumData && albumData.tracks && albumData.tracks.length > 0) {
+  if (!targetMovie || targetMovie.length < 3) {
+    for (const t of tracks.slice(0, 3)) {
+      const extracted = extractMovieTitle(t.title, t.artist, query);
+      if (extracted && extracted.length >= 3) {
+        targetMovie = extracted;
+        break;
+      }
+    }
+  }
+
+  let album = null;
+  if (targetMovie && targetMovie.length >= 3) {
+    const jukeboxQuery = `${targetMovie} movie full songs audio jukebox`;
+    const albumTracks = await searchTracks(jukeboxQuery, 20);
+    const pureAlbumTracks = albumTracks.filter(t => !/\b(trailer|teaser)\b/i.test(t.title));
+
+    if (pureAlbumTracks.length > 0) {
+      const coverTrack = pureAlbumTracks[0] || tracks[0];
       album = {
-        ...albumData,
-        sourceTrack: topTrack,
+        movieTitle: targetMovie,
+        albumTitle: `${targetMovie} (Full Movie Album)`,
+        coverArt: coverTrack.thumbnail,
+        tracks: pureAlbumTracks,
+        sourceTrack: coverTrack,
       };
     }
   }
 
   return { album, tracks };
 }
+
 
 
