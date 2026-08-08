@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Plus, ListPlus, Check, Clock, X, Trash2 } from 'lucide-react';
+import { Search, Plus, ListPlus, Check, Clock, X, Trash2, Disc3 } from 'lucide-react';
 import { searchTracks } from '../services/search';
 import { storage } from '../services/storage';
 import EqualizerIcon from './EqualizerIcon';
@@ -117,7 +117,7 @@ function isPureSong(track) {
   return true;
 }
 
-export default function SearchView({ onPlayTrack, currentTrack, isPlaying, playlists, onAddToPlaylist, initialQuery = '' }) {
+export default function SearchView({ onPlayTrack, currentTrack, isPlaying, playlists, onAddToPlaylist, onOpenMovieAlbum, initialQuery = '' }) {
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -449,7 +449,16 @@ export default function SearchView({ onPlayTrack, currentTrack, isPlaying, playl
                   <div className="track-title">{track.title}</div>
                   <div className="track-artist">{track.artist}</div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                  {onOpenMovieAlbum && (
+                    <button
+                      className="movie-album-btn"
+                      onClick={(e) => { e.stopPropagation(); onOpenMovieAlbum(track); }}
+                      title="View Movie Album / Full Soundtrack"
+                    >
+                      <Disc3 size={17} />
+                    </button>
+                  )}
                   <AddToPlaylistMenu
                     track={track}
                     playlists={playlists}

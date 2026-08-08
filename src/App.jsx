@@ -16,6 +16,7 @@ import AuthModal from './components/AuthModal';
 import Toast from './components/Toast';
 import CustomModal from './components/CustomModal';
 import QueueDrawer from './components/QueueDrawer';
+import MovieAlbumModal from './components/MovieAlbumModal';
 import { yt } from './services/youtube';
 import { storage } from './services/storage';
 import { searchTracks, getTrendingTelugu, getTrendingHindi, getTrendingEnglish, getTopGlobal, getTopIndia, resolveChartTrack } from './services/search';
@@ -51,6 +52,14 @@ export default function App() {
   const [sleepTimerMinutes, setSleepTimerMinutes] = useState(null);
   const [sleepTimerTimeLeft, setSleepTimerTimeLeft] = useState(null);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [movieAlbumTrack, setMovieAlbumTrack] = useState(null);
+  const [isMovieAlbumOpen, setIsMovieAlbumOpen] = useState(false);
+
+  const handleOpenMovieAlbum = useCallback((track) => {
+    if (!track) return;
+    setMovieAlbumTrack(track);
+    setIsMovieAlbumOpen(true);
+  }, []);
 
   // Custom Glass Modal state
   const [modalState, setModalState] = useState({
@@ -560,6 +569,7 @@ export default function App() {
               isPlaying={isPlaying}
               playlists={playlists}
               onAddToPlaylist={handleAddToPlaylist}
+              onOpenMovieAlbum={handleOpenMovieAlbum}
             />
           )}
           {activeView === 'library' && (
@@ -649,6 +659,7 @@ export default function App() {
               topIndia={topIndia}
               topGlobalLoading={topGlobalLoading}
               topIndiaLoading={topIndiaLoading}
+              onOpenMovieAlbum={handleOpenMovieAlbum}
             />
           )}
         </Suspense>
@@ -697,6 +708,7 @@ export default function App() {
         sleepTimerActive={sleepTimerTimeLeft ? Math.ceil(sleepTimerTimeLeft / 60) : null}
         playbackSpeed={playbackSpeed}
         onChangeSpeed={handleCycleSpeed}
+        onOpenMovieAlbum={handleOpenMovieAlbum}
       />
 
       {/* Mobile Bottom Navigation Bar */}
@@ -757,6 +769,17 @@ export default function App() {
           setQueue([]);
           addToast('Queue cleared', 'info');
         }}
+      />
+      <MovieAlbumModal
+        isOpen={isMovieAlbumOpen}
+        onClose={() => setIsMovieAlbumOpen(false)}
+        track={movieAlbumTrack}
+        currentTrack={currentTrack}
+        isPlaying={isPlaying}
+        onPlayTrack={playTrack}
+        playlists={playlists}
+        onAddToPlaylist={handleAddToPlaylist}
+        onShowToast={addToast}
       />
     </div>
   );

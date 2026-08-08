@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flame, ListPlus, Check, Plus, Music } from 'lucide-react';
+import { Flame, ListPlus, Check, Plus, Music, Disc3 } from 'lucide-react';
 import EqualizerIcon from './EqualizerIcon';
 
 function getGreeting() {
@@ -225,7 +225,8 @@ export default function HomeView({
   currentTrack,
   isPlaying,
   playlists,
-  onAddToPlaylist
+  onAddToPlaylist,
+  onOpenMovieAlbum
 }) {
   const [activeCategory, setActiveCategory] = useState('global');
 
@@ -320,7 +321,16 @@ export default function HomeView({
                     <div className="trending-card-title">{track.title}</div>
                     <div className="trending-card-artist">{track.artist}</div>
                   </div>
-                  <div className="trending-card-actions">
+                  <div className="trending-card-actions" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {onOpenMovieAlbum && (
+                      <button
+                        className="movie-album-btn"
+                        onClick={(e) => { e.stopPropagation(); onOpenMovieAlbum(track); }}
+                        title="View Movie Album / Full Soundtrack"
+                      >
+                        <Disc3 size={16} />
+                      </button>
+                    )}
                     <AddToPlaylistMenu
                       track={track}
                       playlists={playlists}

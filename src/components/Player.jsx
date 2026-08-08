@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Play, Pause, SkipBack, SkipForward, Shuffle, Repeat,
   Volume2, VolumeX, Heart, ListPlus, Plus, Check, Mic2,
-  ChevronDown, Maximize2, ListMusic, Clock, Gauge
+  ChevronDown, Maximize2, ListMusic, Clock, Gauge, Disc3
 } from 'lucide-react';
 import { yt } from '../services/youtube';
 import { storage } from '../services/storage';
@@ -142,7 +142,8 @@ export default function Player({
   onOpenSleepTimer,
   sleepTimerActive,
   playbackSpeed = 1,
-  onChangeSpeed
+  onChangeSpeed,
+  onOpenMovieAlbum
 }) {
   const [volume, setVolume] = useState(() => storage.getVolume());
   const [muted, setMuted] = useState(false);
@@ -412,6 +413,16 @@ export default function Player({
         >
           <Heart size={18} fill={isLiked ? 'currentColor' : 'none'} />
         </button>
+        {onOpenMovieAlbum && (
+          <button
+            className="player-btn"
+            onClick={(e) => { e.stopPropagation(); onOpenMovieAlbum(currentTrack); }}
+            title="View Movie Album / Full Soundtrack"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <Disc3 size={18} />
+          </button>
+        )}
         {playlists && onAddToPlaylist && (
           <AddToPlaylistMenu
             track={currentTrack}

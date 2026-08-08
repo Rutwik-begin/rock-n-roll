@@ -399,3 +399,59 @@ export async function getTrendingEnglish() {
     { id: '09R8_2nJtjg', videoId: '09R8_2nJtjg', title: 'Sugar', artist: 'Maroon 5', duration: 235, thumbnail: 'https://i.ytimg.com/vi/09R8_2nJtjg/hqdefault.jpg' },
   ]);
 }
+
+/**
+ * Extract Movie/Album Title from Track metadata
+ */
+export function extractMovieTitle(title = '', artist = '') {
+  const combined = `${title} ${artist}`;
+
+  // Pattern 1: (From "Movie Name") or (From Movie Name)
+  const fromMatch = combined.match(/\bfrom\s+["']?([^"'()|-]+)["']?/i);
+  if (fromMatch && fromMatch[1].trim()) {
+    return fromMatch[1].trim();
+  }
+
+  // Pattern 2: Title / Movie Name
+  if (title.includes('/')) {
+    const parts = title.split('/');
+    if (parts.length > 1 && parts[parts.length - 1].trim().length > 2) {
+      return parts[parts.length - 1].trim();
+    }
+  }
+
+  // Pattern 3: Movie Name Jukebox / Soundtrack
+  const jukeboxMatch = combined.match(/([^|-]+)\s+(jukebox|soundtrack|full songs|movie|ost)/i);
+  if (jukeboxMatch && jukeboxMatch[1].trim().length > 2) {
+    return jukeboxMatch[1].trim();
+  }
+
+  // Fallback: If title has hyphen e.g. "Song Name - Movie Name"
+  if (title.includes('-')) {
+    const parts = title.split('-');
+    if (parts.length > 1 && parts[1].trim().length > 2) {
+      return parts[1].trim();
+    }
+  }
+
+  return title;
+}
+
+/**
+ * Fetch all tracks belonging to a movie album
+ */
+export async function fetchMovieAlbum(track) {
+  if (!track) return null;
+  const movieTitle = extractMovieTitle(track.title, track.artist);
+  const searchQuery = `${movieTitle} movie full songs audio jukebox songs`;
+
+  const tracks = await searchTracks(searchQuery, 20);
+
+  return {
+    movieTitle,
+    albumTitle: `${movieTitle} Soundtrack`,
+    coverArt: track.thumbnail,
+    tracks: tracks.length > 0 ? tracks : [track]
+  };
+}
+
