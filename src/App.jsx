@@ -23,6 +23,7 @@ import { yt } from './services/youtube';
 import { storage } from './services/storage';
 import { searchTracks, getTrendingTelugu, getTrendingHindi, getTrendingEnglish, getTopGlobal, getTopIndia, resolveChartTrack } from './services/search';
 import { getCurrentUser, onAuthStateChange, signOut as supabaseSignOut, fetchUserData, syncUserData } from './services/supabase';
+import { getUserPreferences } from './services/usageTracker';
 
 export default function App() {
   const [activeView, setActiveView] = useState('login');
@@ -153,6 +154,11 @@ export default function App() {
             if (cloudData.recentTracks) { setRecentTracks(cloudData.recentTracks); storage.saveRecent(cloudData.recentTracks); }
           }
           setActiveView('home');
+
+          const prefs = getUserPreferences();
+          if (!prefs.artists || prefs.artists.length < 3) {
+            setIsOnboardingOpen(true);
+          }
         } else {
           setActiveView('login');
         }
@@ -171,6 +177,10 @@ export default function App() {
             if (cloudData.likedTracks) { setLikedTracks(cloudData.likedTracks); storage.saveLiked(cloudData.likedTracks); }
             if (cloudData.playlists) { setPlaylists(cloudData.playlists); storage.savePlaylists(cloudData.playlists); }
             if (cloudData.recentTracks) { setRecentTracks(cloudData.recentTracks); storage.saveRecent(cloudData.recentTracks); }
+          }
+          const prefs = getUserPreferences();
+          if (!prefs.artists || prefs.artists.length < 3) {
+            setIsOnboardingOpen(true);
           }
         } else if (event === 'SIGNED_OUT') {
           stopPlaybackAndClearUser();
