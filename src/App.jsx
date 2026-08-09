@@ -656,6 +656,7 @@ export default function App() {
               playlists={playlists}
               recentTracks={recentTracks}
               onOpenOnboarding={() => setIsOnboardingOpen(true)}
+              setActiveView={setActiveView}
             />
           )}
           {activeView === 'home' && (

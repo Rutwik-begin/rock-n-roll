@@ -43,14 +43,12 @@ export default function Sidebar({ activeView, setActiveView, playlists, onCreate
         <Heart /> Liked Songs
       </button>
 
-      {user && (
-        <button
-          className={`nav-item ${activeView === 'profile' ? 'active' : ''}`}
-          onClick={() => setActiveView('profile')}
-        >
-          <User /> Profile & Settings
-        </button>
-      )}
+      <button
+        className={`nav-item ${activeView === 'profile' ? 'active' : ''}`}
+        onClick={() => setActiveView('profile')}
+      >
+        <User /> {user ? 'Profile & Settings' : 'My Account'}
+      </button>
 
       <div className="sidebar-divider" />
 

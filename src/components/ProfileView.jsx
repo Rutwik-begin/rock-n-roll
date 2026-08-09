@@ -3,7 +3,7 @@ import { ShieldCheck, LogOut, Heart, ListMusic, Music, User, CheckCircle, AlertC
 import { updateUserProfile, updateUserPassword } from '../services/supabase';
 import ApiHealthDashboard from './ApiHealthDashboard';
 
-export default function ProfileView({ user, setUser, onSignOut, likedTracks = [], playlists = [], recentTracks = [], onOpenOnboarding }) {
+export default function ProfileView({ user, setUser, onSignOut, likedTracks = [], playlists = [], recentTracks = [], onOpenOnboarding, setActiveView }) {
   const initialDisplayName = user?.user_metadata?.display_name || (user?.email ? user.email.split('@')[0] : 'Music Fan');
   
   const [displayName, setDisplayName] = useState(initialDisplayName);
@@ -12,6 +12,8 @@ export default function ProfileView({ user, setUser, onSignOut, likedTracks = []
 
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const [adminOverride, setAdminOverride] = useState(() => localStorage.getItem('rock_admin_mode') === 'true');
 
   const ADMIN_EMAILS = ['notrealmindtaken@gmail.com'];
   const userEmail = user?.email?.toLowerCase() || '';
