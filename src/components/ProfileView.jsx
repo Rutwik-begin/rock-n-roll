@@ -1,3 +1,6 @@
+import React, { useState } from 'react';
+import { ShieldCheck, LogOut, Heart, ListMusic, Music, User, CheckCircle, AlertCircle, Loader, Edit3, Key, Sparkles } from 'lucide-react';
+import { updateUserProfile, updateUserPassword } from '../services/supabase';
 import ApiHealthDashboard from './ApiHealthDashboard';
 
 export default function ProfileView({ user, setUser, onSignOut, likedTracks = [], playlists = [], recentTracks = [], onOpenOnboarding }) {

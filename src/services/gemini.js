@@ -8,7 +8,7 @@ import { getDailyQuotaStats, incrementUsage, getUserPreferences } from './usageT
 
 // Demo fallback API key or user-provided env key
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 export async function chatWithRockBot(userMessage, chatHistory = []) {
   const quota = getDailyQuotaStats();
