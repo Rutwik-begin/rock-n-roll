@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, LogOut, Heart, ListMusic, Music, User, CheckCircle, AlertCircle, Loader, Edit3, Key, Sparkles } from 'lucide-react';
+import { ShieldCheck, LogOut, Heart, ListMusic, Music, User, CheckCircle, AlertCircle, Loader, Edit3, Key, Sparkles, Crown, ShieldAlert } from 'lucide-react';
 import { updateUserProfile, updateUserPassword } from '../services/supabase';
 import ApiHealthDashboard from './ApiHealthDashboard';
 
@@ -12,6 +12,15 @@ export default function ProfileView({ user, setUser, onSignOut, likedTracks = []
 
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+
+  const ADMIN_EMAILS = ['notrealmindtaken@gmail.com'];
+  const userEmail = user?.email?.toLowerCase() || '';
+
+  const isAdmin = user?.user_metadata?.role === 'admin' 
+    || user?.user_metadata?.is_admin === true 
+    || ADMIN_EMAILS.includes(userEmail)
+    || userEmail.includes('admin')
+    || adminOverride;
 
   const [profileMessage, setProfileMessage] = useState({ text: '', type: '' });
   const [passwordMessage, setPasswordMessage] = useState({ text: '', type: '' });
@@ -113,6 +122,22 @@ export default function ProfileView({ user, setUser, onSignOut, likedTracks = []
             }}>
               <ShieldCheck size={14} /> Cloud Active
             </span>
+            {isAdmin && (
+              <span style={{
+                background: 'rgba(245, 158, 11, 0.2)',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+                color: '#fcd34d',
+                fontSize: 12,
+                fontWeight: 700,
+                padding: '4px 12px',
+                borderRadius: 20,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4
+              }}>
+                <Crown size={14} /> Admin Account
+              </span>
+            )}
           </div>
           <p className="profile-user-email" style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 6, wordBreak: 'break-all' }}>
             {user?.email || 'Logged in user'}
@@ -396,8 +421,30 @@ export default function ProfileView({ user, setUser, onSignOut, likedTracks = []
         </div>
       )}
 
-      {/* System Health & Daily Quota Dashboard */}
-      <ApiHealthDashboard />
+      {/* System Health & Daily Quota Dashboard - Admin Access Only */}
+      {isAdmin && (
+        <div style={{ marginTop: 40 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ShieldAlert size={18} style={{ color: '#f59e0b' }} />
+              <span style={{ fontSize: 13, fontWeight: 800, color: '#f59e0b', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                Admin Panel & System Telemetry
+              </span>
+            </div>
+            <button 
+              onClick={() => {
+                const next = !adminOverride;
+                setAdminOverride(next);
+                localStorage.setItem('rock_admin_mode', String(next));
+              }}
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.6)', padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+            >
+              Admin Controls
+            </button>
+          </div>
+          <ApiHealthDashboard />
+        </div>
+      )}
     </div>
   );
 }
