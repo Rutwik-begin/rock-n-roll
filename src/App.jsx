@@ -595,6 +595,15 @@ export default function App() {
         }} />
 
         <Suspense fallback={<div className="loading-state">Loading View...</div>}>
+          {activeView === 'login' && (
+            <LoginView
+              onAuthSuccess={(sessionUser) => {
+                setUser(sessionUser);
+                setActiveView('home');
+              }}
+              onGuestContinue={() => setActiveView('home')}
+            />
+          )}
           {activeView === 'search' && (
             <SearchView
               searchQuery={searchQuery}
