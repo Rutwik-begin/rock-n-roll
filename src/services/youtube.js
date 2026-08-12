@@ -135,7 +135,7 @@ class YouTube {
       const cur = this.player.getCurrentTime() || 0;
       const dur = this.player.getDuration() || 0;
       this.timeListeners.forEach(listener => listener(cur, dur));
-    }, 100);
+    }, 500);
   }
 
   _stopTicker() {

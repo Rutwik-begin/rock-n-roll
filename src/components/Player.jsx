@@ -77,8 +77,8 @@ function AddToPlaylistMenu({ track, playlists, onAddToPlaylist }) {
   );
 }
 
-// Extracted Timeline component
-function PlayerTimeline({ onNext }) {
+// Extracted Timeline component with memoization to prevent main thread lag
+const PlayerTimeline = React.memo(function PlayerTimeline({ onNext }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const seekRef = useRef(false);
@@ -128,7 +128,7 @@ function PlayerTimeline({ onNext }) {
       <span className="time-label">{formatTime(duration)}</span>
     </div>
   );
-}
+});
 
 export default function Player({
   currentTrack, isPlaying,

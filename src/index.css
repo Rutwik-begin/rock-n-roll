@@ -72,6 +72,16 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: var(--radius-full); }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
+/* Performance & GPU Acceleration Optimizations */
+.player-bar, .full-player-overlay, .modal-backdrop {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.song-card, .track-row {
+  contain: content;
+}
+
 /* --- App Layout --- */
 .app-layout {
   display: grid;
