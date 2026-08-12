@@ -234,19 +234,41 @@ export default function App() {
     return () => { yt.onStateChange = null; yt.onError = null; };
   }, []);
 
-  // MediaSession
+  // MediaSession lockscreen controls & background audio sync
   useEffect(() => {
     if (!('mediaSession' in navigator) || !currentTrack) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: currentTrack.title,
-      artist: currentTrack.artist,
-      artwork: [{ src: currentTrack.thumbnail, sizes: '512x512', type: 'image/jpeg' }]
-    });
-    navigator.mediaSession.setActionHandler('play', () => handlePlayPause());
-    navigator.mediaSession.setActionHandler('pause', () => handlePlayPause());
-    navigator.mediaSession.setActionHandler('nexttrack', () => handleNext());
-    navigator.mediaSession.setActionHandler('previoustrack', () => handlePrev());
-  }, [currentTrack]);
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentTrack.title,
+        artist: currentTrack.artist,
+        artwork: [
+          { src: currentTrack.thumbnail, sizes: '96x96', type: 'image/jpeg' },
+          { src: currentTrack.thumbnail, sizes: '512x512', type: 'image/jpeg' }
+        ]
+      });
+
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+
+      navigator.mediaSession.setActionHandler('play', () => handlePlayPause());
+      navigator.mediaSession.setActionHandler('pause', () => handlePlayPause());
+      navigator.mediaSession.setActionHandler('nexttrack', () => handleNext());
+      navigator.mediaSession.setActionHandler('previoustrack', () => handlePrev());
+
+      try {
+        navigator.mediaSession.setActionHandler('seekto', (details) => {
+          if (details.seekTime !== undefined) {
+            yt.seekTo(details.seekTime);
+          }
+        });
+        navigator.mediaSession.setActionHandler('stop', () => {
+          yt.pause();
+          setIsPlaying(false);
+        });
+      } catch (e) {}
+    } catch (err) {
+      console.warn('MediaSession error:', err);
+    }
+  }, [currentTrack, isPlaying, handlePlayPause, handleNext, handlePrev]);
 
   // Space to play/pause
   useEffect(() => {

@@ -3,17 +3,41 @@
  * Single clean engine for full-length audio playback via hidden YouTube iframe.
  */
 
+// Silent 1-second WAV audio stream to keep mobile OS background audio service active when screen is turned off / locked
+const SILENT_AUDIO_URI = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+
 class YouTube {
   constructor() {
     this.player = null;
     this.ready = false;
     this.queued = null;
     this.ticker = null;
+    this.silentAudio = null;
 
     this.timeListeners = new Set();
     this.onEnded = null;       // () => void
     this.onStateChange = null; // (state) => void  — 'playing' | 'paused' | 'buffering' | 'ended'
     this.onError = null;       // (errorCode) => void
+  }
+
+  _startSilentKeepAlive() {
+    if (typeof window === 'undefined') return;
+    try {
+      if (!this.silentAudio) {
+        this.silentAudio = new Audio(SILENT_AUDIO_URI);
+        this.silentAudio.loop = true;
+        this.silentAudio.volume = 0.001;
+      }
+      this.silentAudio.play().catch(() => {});
+    } catch (e) {}
+  }
+
+  _stopSilentKeepAlive() {
+    if (this.silentAudio) {
+      try {
+        this.silentAudio.pause();
+      } catch (e) {}
+    }
   }
 
   init() {
@@ -87,12 +111,15 @@ class YouTube {
     const YT = window.YT.PlayerState;
 
     if (state === YT.PLAYING) {
+      this._startSilentKeepAlive();
       this._startTicker();
       if (this.onStateChange) this.onStateChange('playing');
     } else if (state === YT.PAUSED) {
+      this._stopSilentKeepAlive();
       this._stopTicker();
       if (this.onStateChange) this.onStateChange('paused');
     } else if (state === YT.ENDED) {
+      this._stopSilentKeepAlive();
       this._stopTicker();
       if (this.onStateChange) this.onStateChange('ended');
       if (this.onEnded) this.onEnded();
@@ -127,6 +154,7 @@ class YouTube {
 
   play(videoId) {
     if (!videoId) return;
+    this._startSilentKeepAlive();
     if (this.ready && this.player && typeof this.player.loadVideoById === 'function') {
       this.player.loadVideoById(videoId);
     } else {
@@ -136,10 +164,12 @@ class YouTube {
   }
 
   resume() {
+    this._startSilentKeepAlive();
     if (this.player && typeof this.player.playVideo === 'function') this.player.playVideo();
   }
 
   pause() {
+    this._stopSilentKeepAlive();
     this._stopTicker();
     if (this.player && typeof this.player.pauseVideo === 'function') this.player.pauseVideo();
   }
