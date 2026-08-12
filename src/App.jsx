@@ -3,14 +3,13 @@ import { Music, Home, Search, Headphones, Library, User } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import Player from './components/Player';
 
-// Lazy loaded views to reduce initial JS bundle size
-const HomeView = lazy(() => import('./components/HomeView'));
-const SearchView = lazy(() => import('./components/SearchView'));
-const LibraryView = lazy(() => import('./components/LibraryView'));
-const PodcastView = lazy(() => import('./components/PodcastView'));
-const LyricsView = lazy(() => import('./components/LyricsView'));
-const LoginView = lazy(() => import('./components/LoginView'));
-const ProfileView = lazy(() => import('./components/ProfileView'));
+import HomeView from './components/HomeView';
+import SearchView from './components/SearchView';
+import LibraryView from './components/LibraryView';
+import PodcastView from './components/PodcastView';
+import LyricsView from './components/LyricsView';
+import LoginView from './components/LoginView';
+import ProfileView from './components/ProfileView';
 
 import AuthModal from './components/AuthModal';
 import Toast from './components/Toast';
