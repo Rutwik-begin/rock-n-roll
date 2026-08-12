@@ -70,8 +70,9 @@ class YouTube {
       box.id = 'yt-container';
       Object.assign(box.style, {
         position: 'fixed', bottom: '0', right: '0',
-        width: '200px', height: '200px',
+        width: '1px', height: '1px',
         zIndex: '-9999', opacity: '0.001',
+        transform: 'scale(0.001)',
         pointerEvents: 'none', overflow: 'hidden'
       });
       document.body.appendChild(box);
@@ -81,11 +82,11 @@ class YouTube {
     }
 
     this.player = new window.YT.Player('yt-player', {
-      width: 200, height: 200,
+      width: 1, height: 1,
       playerVars: {
         autoplay: 1, controls: 0, disablekb: 1, fs: 0,
         modestbranding: 1, playsinline: 1, rel: 0,
-        enablejsapi: 1, origin: window.location.origin
+        enablejsapi: 1, vq: 'small', origin: window.location.origin
       },
       events: {
         onReady: () => {
@@ -111,6 +112,9 @@ class YouTube {
     const YT = window.YT.PlayerState;
 
     if (state === YT.PLAYING) {
+      if (this.player && typeof this.player.setPlaybackQuality === 'function') {
+        try { this.player.setPlaybackQuality('small'); } catch (e) {}
+      }
       this._startSilentKeepAlive();
       this._startTicker();
       if (this.onStateChange) this.onStateChange('playing');
